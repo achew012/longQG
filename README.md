@@ -3,4 +3,4 @@
 Generate questions from long text sequences
 
 ## TO RUN
-python src/run_qg.py
+`python src/run_qg.py`
