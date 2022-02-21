@@ -19,7 +19,7 @@ def train(cfg, task) -> LongformerQG:
     )
 
     model = LongformerQG(cfg, task)
-    trainer = pl.Trainer(gpus=1, max_epochs=cfg.num_epochs,
+    trainer = pl.Trainer(gpus=1, max_epochs=cfg.num_epochs, accumulate_grad_batches=cfg.grad_accum,
                          callbacks=[checkpoint_callback])
     trainer.fit(model)
     return model
@@ -46,7 +46,7 @@ def hydra_main(cfg) -> float:
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
     task.connect(cfg_dict)
     task.set_base_docker("nvidia/cuda:11.4.0-runtime-ubuntu20.04")
-    task.execute_remotely(queue_name="compute2", exit_process=True)
+    task.execute_remotely(queue_name="compute", exit_process=True)
 
     if cfg.train:
         model = train(cfg, task)
