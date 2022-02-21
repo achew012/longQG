@@ -36,6 +36,8 @@ def hydra_main(cfg) -> float:
 
     print("Detected config file, initiating task... {}".format(cfg))
 
+    Task.add_requirements('requirements.txt')
+
     if cfg.train:
         task = Task.init(project_name='LongQG', task_name='longQG-train',
                          output_uri="s3://experiment-logging/storage/")
