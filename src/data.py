@@ -30,6 +30,8 @@ class QGDataset(Dataset):
         dataset["context_answer"] = dataset["answer"] + \
             " {} ".format(self.tokenizer.sep_token)+dataset["context"]
 
+        dataset = dataset[:20000]
+
         self.context_answer_ids = [
             self.tokenizer(
                 row["context_answer"], padding="max_length", truncation=True,

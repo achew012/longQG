@@ -35,8 +35,8 @@ class LongformerQG(pl.LightningModule):
         # Load and update config then load a pretrained LEDForConditionalGeneration
         self.base_model_config = LEDConfig.from_pretrained(
             self.cfg.model_name)
-        # self.base_model_config.gradient_checkpointing = True
 
+        # self.base_model_config.gradient_checkpointing = True
         # self.base_model_config.max_length = cfg.max_input_len
         # self.base_model_config.min_length = 24
 
@@ -112,10 +112,6 @@ class LongformerQG(pl.LightningModule):
             outputs = self.forward(**batch)
         else:
             outputs = self.forward(**batch)
-
-        if (batch_nb+1) % self.cfg.grad_accum == 0:
-            # TODO  do grad accumulation, will need to bring the loss out
-            pass
 
         return {'loss': outputs.loss}
 
