@@ -6,6 +6,10 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from clearml import Task, StorageManager
 
+Task.add_requirements('requirements.txt')
+# Task.add_requirements('rouge_score')
+# Task.add_requirements('nltk')
+
 
 def train(cfg, task) -> LongformerQG:
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -35,8 +39,6 @@ def test(cfg, model) -> list:
 def hydra_main(cfg) -> float:
 
     print("Detected config file, initiating task... {}".format(cfg))
-
-    Task.add_requirements('requirements.txt')
 
     if cfg.train:
         task = Task.init(project_name='LongQG', task_name='longQG-train',
