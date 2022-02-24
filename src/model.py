@@ -176,17 +176,17 @@ class LongformerQG(pl.LightningModule):
         gold = self.tokenizer.batch_decode(
             question_ids, skip_special_tokens=True)
 
-        # results = self.bleu_metric.compute(
-        #     predictions=generated_outcome, references=gold)
+        bleu = self.bleu_metric.compute(
+            predictions=generated_outcome, references=gold)
 
-        results = self.rouge_metric.compute(
+        rouge = self.rouge_metric.compute(
             predictions=generated_outcome, references=gold)
 
         # self.clearml_logger.report_scalar(
         #     title="batch_rouge_{}".format(split), series=split, value=results["rouge1"], iteration=batch_nb
         # )
 
-        return loss, generated_outcome, results
+        return loss, generated_outcome, rouge, bleu
 
     #################################################################################
 
@@ -205,18 +205,24 @@ class LongformerQG(pl.LightningModule):
         self.log("average_val_rouge1", sum(total_rouge)/len(total_rouge),)
 
     def test_step(self, batch, batch_nb):
-        batch_loss, batch_generated_text, batch_rouge = self._evaluation_step(
+        batch_loss, batch_generated_text, batch_rouge, batch_bleu = self._evaluation_step(
             'test', batch, batch_nb)
-        return {"results": batch_rouge, "loss": batch_loss, "generated_text": batch_generated_text}
+        return {"rouge": batch_rouge, "bleu": batch_bleu, "loss": batch_loss, "generated_text": batch_generated_text}
 
     def test_epoch_end(self, outputs):
         total_loss = []
         total_rouge = []
+        total_bleu = []
+        generated_text = []
         for batch in outputs:
             total_loss.append(batch["loss"])
-            total_rouge.append(batch["results"]["rouge1"].mid.fmeasure)
+            total_rouge.append(batch["rouge"]["rouge1"].mid.fmeasure)
+            total_bleu.append(batch["bleu"])
+            generated_text.append(batch["generated_text"])
+        
         self.log("test_loss", sum(total_loss)/len(total_loss))
         self.log("average_test_rouge1", sum(total_rouge)/len(total_rouge))
+        self.log("average_test_bleu", sum(total_bleu)/len(total_bleu))
 
     def configure_optimizers(self):
         """Configure the optimizer and the learning rate scheduler"""
