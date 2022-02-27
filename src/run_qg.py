@@ -49,7 +49,7 @@ def hydra_main(cfg) -> float:
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
     task.connect(cfg_dict)
     task.set_base_docker("nvidia/cuda:11.4.0-runtime-ubuntu20.04")
-    task.execute_remotely(queue_name="compute2", exit_process=True)
+    task.execute_remotely(queue_name="compute", exit_process=True)
 
     if cfg.train:
         model = train(cfg, task)

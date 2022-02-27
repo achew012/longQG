@@ -173,11 +173,18 @@ class LongformerQG(pl.LightningModule):
         outputs = self.generate(**batch)
         generated_outcome = self.tokenizer.batch_decode(
             outputs["sequences"], skip_special_tokens=True)
+
         gold = self.tokenizer.batch_decode(
             question_ids, skip_special_tokens=True)
 
-        bleu = self.bleu_metric.compute(
-            predictions=generated_outcome, references=gold)
+        # bleu_preds = [self.tokenizer.tokenize(
+        #     qns) for qns in generated_outcome]
+
+        # bleu_gold = [self.tokenizer.tokenize(
+        #     qns) for qns in gold]
+
+        # bleu = self.bleu_metric.compute(
+        #     predictions=bleu_preds, references=bleu_gold)
 
         rouge = self.rouge_metric.compute(
             predictions=generated_outcome, references=gold)
@@ -186,7 +193,7 @@ class LongformerQG(pl.LightningModule):
         #     title="batch_rouge_{}".format(split), series=split, value=results["rouge1"], iteration=batch_nb
         # )
 
-        return loss, generated_outcome, rouge, bleu
+        return loss, generated_outcome, rouge, None
 
     #################################################################################
 
@@ -219,10 +226,11 @@ class LongformerQG(pl.LightningModule):
             total_rouge.append(batch["rouge"]["rouge1"].mid.fmeasure)
             total_bleu.append(batch["bleu"])
             generated_text.append(batch["generated_text"])
-        
+
+        self.task.upload_artifact("predictions", generated_text)
         self.log("test_loss", sum(total_loss)/len(total_loss))
         self.log("average_test_rouge1", sum(total_rouge)/len(total_rouge))
-        self.log("average_test_bleu", sum(total_bleu)/len(total_bleu))
+        # self.log("average_test_bleu", sum(total_bleu)/len(total_bleu))
 
     def configure_optimizers(self):
         """Configure the optimizer and the learning rate scheduler"""
