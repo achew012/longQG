@@ -5,3 +5,4 @@ datasets
 ipdb
 nltk
 rouge_score
+fastparquet
