@@ -28,5 +28,5 @@ clearml_dataset_tags: []
 debug: False
 train: False
 test: True
-# role_list: ["PerpInd", "PerpOrg", "Target", "Victim", "Weapon"]
+prediction_filename: preds.parquet
 
