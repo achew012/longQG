@@ -21,7 +21,6 @@ class LongformerQG(pl.LightningModule):
     def __init__(self, cfg, task):
         """Loads the model, the tokenizer and the metric."""
         super().__init__()
-        self.save_hyperparameters()
         self.cfg = cfg
         self.task = task
         self.clearml_logger = self.task.get_logger()
@@ -193,44 +192,40 @@ class LongformerQG(pl.LightningModule):
         #     title="batch_rouge_{}".format(split), series=split, value=results["rouge1"], iteration=batch_nb
         # )
 
-        return loss, generated_outcome, rouge, None
+        return generated_outcome, rouge
 
     #################################################################################
 
     def validation_step(self, batch, batch_nb):
-        batch_loss, batch_generated_text, batch_rouge = self._evaluation_step(
+        batch_generated_text, batch_rouge = self._evaluation_step(
             'val', batch, batch_nb)
-        return {"results": batch_rouge, "loss": batch_loss, "generated_text": batch_generated_text}
+        return {"results": batch_rouge, "generated_text": batch_generated_text}
 
     def validation_epoch_end(self, outputs):
-        total_loss = []
         total_rouge = []
         for batch in outputs:
-            total_loss.append(batch["loss"])
             total_rouge.append(batch["results"]["rouge1"].mid.fmeasure)
-        self.log("val_loss", sum(total_loss)/len(total_loss), )
         self.log("average_val_rouge1", sum(total_rouge)/len(total_rouge),)
 
     def test_step(self, batch, batch_nb):
-        batch_loss, batch_generated_text, batch_rouge, batch_bleu = self._evaluation_step(
+        batch_generated_text, batch_rouge = self._evaluation_step(
             'test', batch, batch_nb)
-        return {"rouge": batch_rouge, "bleu": batch_bleu, "loss": batch_loss, "generated_text": batch_generated_text}
+        return {"rouge": batch_rouge, "generated_text": batch_generated_text}
 
     def test_epoch_end(self, outputs):
-        total_loss = []
         total_rouge = []
-        total_bleu = []
         generated_text = []
         for batch in outputs:
-            total_loss.append(batch["loss"])
             total_rouge.append(batch["rouge"]["rouge1"].mid.fmeasure)
-            total_bleu.append(batch["bleu"])
-            generated_text.append(batch["generated_text"])
+            generated_text += batch["generated_text"]
 
-        self.task.upload_artifact("predictions", generated_text)
-        self.log("test_loss", sum(total_loss)/len(total_loss))
+        pred_df = pd.DataFrame(generated_text, columns=["predictions"])
+        pred_df.to_parquet(self.cfg.prediction_filename, engine="fastparquet")
+        self.task.upload_artifact(
+            "generated_text", self.cfg.prediction_filename
+        )
+        self.task.upload_artifact("predictions", self.cfg.prediction_filename)
         self.log("average_test_rouge1", sum(total_rouge)/len(total_rouge))
-        # self.log("average_test_bleu", sum(total_bleu)/len(total_bleu))
 
     def configure_optimizers(self):
         """Configure the optimizer and the learning rate scheduler"""

@@ -1,5 +1,7 @@
 import hydra
 from omegaconf import OmegaConf
+from typing import Dict, Any
+import ast
 import os
 from model import LongformerQG
 import pytorch_lightning as pl
@@ -8,6 +10,24 @@ from clearml import Task, StorageManager
 
 Task.add_requirements('rouge_score')
 Task.add_requirements('nltk')
+
+
+def get_clearml_params(task: Task) -> Dict[str, Any]:
+    '''
+    returns task params as a dictionary
+    the values are casted in the required Python type
+    '''
+    string_params = task.get_parameters_as_dict()
+    clean_params = {}
+    for k, v in string_params["General"].items():
+        try:
+            # ast.literal eval cannot read empty strings + actual strings
+            # i.e. ast.literal_eval("True") -> True, ast.literal_eval("i am cute") -> error
+            clean_params[k] = ast.literal_eval(v)
+        except:
+            # if exception is triggered, it's an actual string, or empty string
+            clean_params[k] = v
+    return OmegaConf.create(clean_params)
 
 
 def train(cfg, task) -> LongformerQG:
@@ -48,8 +68,10 @@ def hydra_main(cfg) -> float:
 
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
     task.connect(cfg_dict)
-    task.set_base_docker("nvidia/cuda:11.4.0-runtime-ubuntu20.04")
+    task.set_base_docker("nvidia/cuda:11.2.0-runtime-ubuntu20.04")
     task.execute_remotely(queue_name="compute", exit_process=True)
+
+    cfg = get_clearml_params(task)
 
     if cfg.train:
         model = train(cfg, task)
