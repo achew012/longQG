@@ -11,6 +11,7 @@ from clearml import Task, StorageManager
 Task.add_requirements(package_name="datasets", package_version="1.18.3")
 Task.add_requirements("rouge_score")
 Task.add_requirements("nltk")
+Task.add_requirements("fastparquet")
 
 
 def get_clearml_params(task: Task) -> Dict[str, Any]:
@@ -89,7 +90,8 @@ def hydra_main(cfg) -> float:
 
     if cfg.test:
         if cfg.trained_model_path:
-            trained_model_path = StorageManager.get_local_copy(cfg.trained_model_path)
+            trained_model_path = StorageManager.get_local_copy(
+                cfg.trained_model_path)
             model = LongformerQG.load_from_checkpoint(
                 trained_model_path, cfg=cfg, task=task
             )
